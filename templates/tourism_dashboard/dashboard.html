@@ -1,0 +1,203 @@
+{% extends 'tourism_dashboard/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Filters</h5>
+            </div>
+            <div class="card-body">
+                <form id="filterForm">
+                    <div class="mb-3">
+                        <label for="yearRange" class="form-label">Year Range</label>
+                        <select class="form-select" id="yearRange" name="year_range">
+                            <option value="">All Years</option>
+                            {% for year in years %}
+                            <option value="{{ year }}-{{ year }}">{{ year }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="region" class="form-label">Region</label>
+                        <select class="form-select" id="region" name="region">
+                            <option value="">All Regions</option>
+                            {% for region in regions %}
+                            <option value="{{ region }}">{{ region }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="visitorType" class="form-label">Visitor Type</label>
+                        <select class="form-select" id="visitorType" name="visitor_type">
+                            <option value="">All Types</option>
+                            {% for type in visitor_types %}
+                            <option value="{{ type }}">{{ type }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Apply Filters</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-9">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Tourism Trends Dashboard</h5>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-outline-primary active" data-view="yearly_trends">Yearly Trends</button>
+                    <button type="button" class="btn btn-outline-primary" data-view="regional_distribution">Regional</button>
+                    <button type="button" class="btn btn-outline-primary" data-view="demographics">Demographics</button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="mainVisualization" style="height: 400px;"></div>
+            </div>
+        </div>
+        
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Regional Distribution</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="regionalDistributionChart" style="height: 300px;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Visitor Demographics</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="demographicsChart" style="height: 300px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Custom Visualizations</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for viz in custom_visualizations %}
+                    <div class="col-md-4 mb-3">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h6 class="card-title mb-0">{{ viz.title }}</h6>
+                                <button class="btn btn-sm btn-danger delete-viz" data-viz-id="{{ viz.id }}">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                            <div class="card-body">
+                                <div id="customViz{{ viz.id }}" style="height: 300px;"></div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize visualizations
+    loadVisualization('yearly_trends');
+    
+    // Handle view switching
+    document.querySelectorAll('[data-view]').forEach(button => {
+        button.addEventListener('click', function() {
+            // Update active button
+            document.querySelectorAll('[data-view]').forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Load the selected visualization
+            loadVisualization(this.dataset.view);
+        });
+    });
+    
+    // Handle filter form submission
+    document.getElementById('filterForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        updateVisualizations();
+    });
+    
+    // Handle custom visualization deletion
+    document.querySelectorAll('.delete-viz').forEach(button => {
+        button.addEventListener('click', function() {
+            if (confirm('Are you sure you want to delete this visualization?')) {
+                window.location.href = `/delete-visualization/${this.dataset.vizId}/`;
+            }
+        });
+    });
+});
+
+function loadVisualization(viewType) {
+    const yearRange = document.getElementById('yearRange').value;
+    const region = document.getElementById('region').value;
+    const visitorType = document.getElementById('visitorType').value;
+    
+    // Make an AJAX call to get the visualization data
+    fetch(`/api/visualization/${viewType}/?year_range=${yearRange}&region=${region}&visitor_type=${visitorType}`)
+        .then(response => response.json())
+        .then(data => {
+            // Update the main visualization
+            if (data[viewType]) {
+                const mainViz = document.getElementById('mainVisualization');
+                Plotly.newPlot(mainViz, data[viewType].data, data[viewType].layout);
+            }
+        })
+        .catch(error => console.error('Error loading visualization:', error));
+}
+
+function updateVisualizations() {
+    // Load all visualizations with current filters
+    loadVisualization('yearly_trends');
+    
+    // Load regional distribution
+    fetch(`/api/visualization/regional_distribution/?${new URLSearchParams({
+        year_range: document.getElementById('yearRange').value,
+        region: document.getElementById('region').value,
+        visitor_type: document.getElementById('visitorType').value
+    })}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.regional_distribution) {
+                const regionalChart = document.getElementById('regionalDistributionChart');
+                Plotly.newPlot(regionalChart, data.regional_distribution.data, data.regional_distribution.layout);
+            }
+        })
+        .catch(error => console.error('Error loading regional distribution:', error));
+    
+    // Load demographics
+    fetch(`/api/visualization/demographics/?${new URLSearchParams({
+        year_range: document.getElementById('yearRange').value,
+        region: document.getElementById('region').value,
+        visitor_type: document.getElementById('visitorType').value
+    })}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.demographics) {
+                const demographicsChart = document.getElementById('demographicsChart');
+                Plotly.newPlot(demographicsChart, data.demographics.data, data.demographics.layout);
+            }
+        })
+        .catch(error => console.error('Error loading demographics:', error));
+}
+</script>
+{% endblock %} 

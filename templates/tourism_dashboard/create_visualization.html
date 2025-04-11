@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Create Custom Visualization</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" id="visualizationForm">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Title</label>
+                        <input type="text" class="form-control" id="title" name="title" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="chartType" class="form-label">Chart Type</label>
+                        <select class="form-select" id="chartType" name="chart_type" required>
+                            <option value="line">Line Chart</option>
+                            <option value="bar">Bar Chart</option>
+                            <option value="pie">Pie Chart</option>
+                            <option value="scatter">Scatter Plot</option>
+                            <option value="heatmap">Heatmap</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Data Filters</label>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label for="yearRange" class="form-label">Year Range</label>
+                                <select class="form-select" id="yearRange" multiple>
+                                    {% for year in years %}
+                                    <option value="{{ year }}">{{ year }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="region" class="form-label">Region</label>
+                                <select class="form-select" id="region" multiple>
+                                    {% for region in regions %}
+                                    <option value="{{ region }}">{{ region }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Chart Configuration</label>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label for="xAxis" class="form-label">X-Axis</label>
+                                <select class="form-select" id="xAxis" required>
+                                    <option value="year">Year</option>
+                                    <option value="country">Country</option>
+                                    <option value="region">Region</option>
+                                    <option value="season">Season</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="yAxis" class="form-label">Y-Axis</label>
+                                <select class="form-select" id="yAxis" required>
+                                    <option value="visitor_count">Visitor Count</option>
+                                    <option value="visitor_type">Visitor Type</option>
+                                    <option value="age_group">Age Group</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Preview</label>
+                        <div id="previewChart" style="height: 400px;"></div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <button type="submit" class="btn btn-primary">Create Visualization</button>
+                        <a href="{% url 'dashboard' %}" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('visualizationForm');
+    const previewChart = document.getElementById('previewChart');
+    
+    // Update preview when form inputs change
+    form.querySelectorAll('select, input').forEach(element => {
+        element.addEventListener('change', updatePreview);
+    });
+    
+    // Handle form submission
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Gather form data
+        const formData = {
+            title: document.getElementById('title').value,
+            chart_type: document.getElementById('chartType').value,
+            data_filters: {
+                years: Array.from(document.getElementById('yearRange').selectedOptions).map(opt => opt.value),
+                regions: Array.from(document.getElementById('region').selectedOptions).map(opt => opt.value)
+            },
+            chart_config: {
+                x_axis: document.getElementById('xAxis').value,
+                y_axis: document.getElementById('yAxis').value
+            }
+        };
+        
+        // Submit form data
+        fetch('{% url "create_visualization" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: JSON.stringify(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                window.location.href = '{% url "dashboard" %}';
+            } else {
+                alert('Error creating visualization: ' + data.message);
+            }
+        });
+    });
+    
+    function updatePreview() {
+        // Implementation for updating the preview chart
+        // This would make an AJAX call to get the data and create the preview visualization
+    }
+});
+</script>
+{% endblock %} 

@@ -1,0 +1,25 @@
+Year,Country,Region,Visitor_Count,Visitor_Type,Season,Age_Group
+2020,USA,North America,1000000,Leisure,Summer,18-30
+2020,USA,North America,500000,Business,Summer,18-30
+2020,USA,North America,300000,Leisure,Winter,31-50
+2020,USA,North America,200000,Business,Winter,31-50
+2020,Canada,North America,800000,Leisure,Summer,18-30
+2020,Canada,North America,400000,Business,Summer,18-30
+2020,Canada,North America,250000,Leisure,Winter,31-50
+2020,Canada,North America,150000,Business,Winter,31-50
+2021,USA,North America,1200000,Leisure,Summer,18-30
+2021,USA,North America,600000,Business,Summer,18-30
+2021,USA,North America,350000,Leisure,Winter,31-50
+2021,USA,North America,250000,Business,Winter,31-50
+2021,Canada,North America,900000,Leisure,Summer,18-30
+2021,Canada,North America,450000,Business,Summer,18-30
+2021,Canada,North America,300000,Leisure,Winter,31-50
+2021,Canada,North America,200000,Business,Winter,31-50
+2022,USA,North America,1500000,Leisure,Summer,18-30
+2022,USA,North America,700000,Business,Summer,18-30
+2022,USA,North America,400000,Leisure,Winter,31-50
+2022,USA,North America,300000,Business,Winter,31-50
+2022,Canada,North America,1000000,Leisure,Summer,18-30
+2022,Canada,North America,500000,Business,Summer,18-30
+2022,Canada,North America,350000,Leisure,Winter,31-50
+2022,Canada,North America,250000,Business,Winter,31-50 

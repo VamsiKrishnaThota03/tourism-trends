@@ -1,0 +1,76 @@
+{% extends 'tourism_dashboard/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Tableau Dashboard</h5>
+                    <a href="{% url 'export_tableau' %}" class="btn btn-primary">
+                        <i class="bi bi-download"></i> Export Data for Tableau
+                    </a>
+                </div>
+                <div class="card-body">
+                    <p>This page provides instructions for using Tableau with your tourism data.</p>
+                    
+                    <h6 class="mt-4">Option 1: Embed Tableau Visualizations</h6>
+                    <p>To embed Tableau visualizations in this application, follow these steps:</p>
+                    <ol>
+                        <li>Download your data using the "Export Data for Tableau" button above</li>
+                        <li>Create visualizations in Tableau Desktop or Tableau Public</li>
+                        <li>Publish your workbook to Tableau Server or Tableau Public</li>
+                        <li>Copy the embed code from Tableau and paste it below:</li>
+                    </ol>
+                    
+                    <div class="mb-3">
+                        <label for="tableauEmbedCode" class="form-label">Tableau Embed Code</label>
+                        <textarea class="form-control" id="tableauEmbedCode" rows="5" placeholder="Paste your Tableau embed code here"></textarea>
+                    </div>
+                    <button id="embedTableau" class="btn btn-success">Embed Visualization</button>
+                    
+                    <div id="tableauContainer" class="mt-4" style="height: 600px; border: 1px solid #ddd;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Option 2: Create a Separate Tableau Dashboard</h5>
+                </div>
+                <div class="card-body">
+                    <p>Alternatively, you can create a completely separate Tableau dashboard:</p>
+                    <ol>
+                        <li>Download your data using the "Export Data for Tableau" button above</li>
+                        <li>Open Tableau Desktop</li>
+                        <li>Connect to the CSV file you downloaded</li>
+                        <li>Create your visualizations and dashboard</li>
+                        <li>Save and share your Tableau workbook</li>
+                    </ol>
+                    <p>This approach gives you the full power of Tableau's analytics capabilities without the limitations of embedding.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle embedding Tableau visualizations
+    document.getElementById('embedTableau').addEventListener('click', function() {
+        const embedCode = document.getElementById('tableauEmbedCode').value;
+        if (embedCode) {
+            document.getElementById('tableauContainer').innerHTML = embedCode;
+        } else {
+            alert('Please paste a Tableau embed code first.');
+        }
+    });
+});
+</script>
+{% endblock %} 

@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Tourism Trends Dashboard</h1>
+    
+    <!-- Filters Section -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form id="filterForm" class="row g-3">
+                {% csrf_token %}
+                <div class="col-md-4">
+                    <label for="yearRange" class="form-label">Year Range</label>
+                    <select class="form-select" id="yearRange" name="year_range">
+                        <option value="">All Years</option>
+                        {% for year in years %}
+                            <option value="{{ year }}-{{ year }}">{{ year }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="region" class="form-label">Region</label>
+                    <select class="form-select" id="region" name="region">
+                        <option value="">All Regions</option>
+                        {% for region in regions %}
+                            <option value="{{ region }}">{{ region }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="visitorType" class="form-label">Visitor Type</label>
+                    <select class="form-select" id="visitorType" name="visitor_type">
+                        <option value="">All Types</option>
+                        {% for type in visitor_types %}
+                            <option value="{{ type }}">{{ type }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">Apply Filters</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Visualizations Section -->
+    <div class="row">
+        <!-- Yearly Trends -->
+        <div class="col-md-12 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Yearly Tourism Trends</h5>
+                    <div id="yearlyTrendsChart" style="height: 400px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Regional Distribution -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Regional Distribution</h5>
+                    <div id="regionalDistributionChart" style="height: 400px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Demographics -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Visitor Demographics</h5>
+                    <div id="demographicsChart" style="height: 400px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Visualizations Section -->
+    {% if custom_visualizations %}
+    <div class="row mt-4">
+        <h3>Custom Visualizations</h3>
+        {% for viz in custom_visualizations %}
+        <div class="col-md-6 mb-4">
+            <div class="card custom-visualization">
+                <div class="card-body">
+                    <h5 class="card-title">{{ viz.title }}</h5>
+                    <div id="customViz{{ viz.id }}" style="height: 400px;"></div>
+                    <button class="btn btn-danger btn-sm delete-visualization" data-viz-id="{{ viz.id }}">
+                        Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+
+<!-- Include Plotly.js -->
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+<script>
+    // Initialize visualizations when the page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        loadVisualization('yearly_trends');
+    });
+
+    function loadVisualization(viewType) {
+        const yearRange = document.getElementById('yearRange').value;
+        const region = document.getElementById('region').value;
+        const visitorType = document.getElementById('visitorType').value;
+        
+        // Make an AJAX call to get the visualization data
+        fetch(`/api/visualization/${viewType}/?year_range=${yearRange}&region=${region}&visitor_type=${visitorType}`)
+            .then(response => response.json())
+            .then(data => {
+                updateVisualizations(data);
+            })
+            .catch(error => console.error('Error:', error));
+    }
+
+    function updateVisualizations(data) {
+        // Update yearly trends chart
+        if (data.yearly_trends) {
+            const yearlyChart = document.getElementById('yearlyTrendsChart');
+            Plotly.newPlot(yearlyChart, data.yearly_trends.data, data.yearly_trends.layout);
+        }
+
+        // Update regional distribution chart
+        if (data.regional_distribution) {
+            const regionalChart = document.getElementById('regionalDistributionChart');
+            Plotly.newPlot(regionalChart, data.regional_distribution.data, data.regional_distribution.layout);
+        }
+
+        // Update demographics chart
+        if (data.demographics) {
+            const demographicsChart = document.getElementById('demographicsChart');
+            Plotly.newPlot(demographicsChart, data.demographics.data, data.demographics.layout);
+        }
+    }
+
+    // Handle form submission for filters
+    document.getElementById('filterForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        loadVisualization('yearly_trends');
+    });
+
+    // Handle custom visualization deletion
+    document.querySelectorAll('.delete-visualization').forEach(button => {
+        button.addEventListener('click', function() {
+            if (confirm('Are you sure you want to delete this visualization?')) {
+                const vizId = this.dataset.vizId;
+                fetch(`/delete-visualization/${vizId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    }
+                })
+                .then(response => {
+                    if (response.ok) {
+                        this.closest('.custom-visualization').remove();
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+            }
+        });
+    });
+</script>
+{% endblock %} 

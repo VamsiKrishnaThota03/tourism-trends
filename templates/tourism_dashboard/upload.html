@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Upload Tourism Data</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    {{ form|crispy }}
+                    <div class="mt-3">
+                        <button type="submit" class="btn btn-primary">Upload</button>
+                        <a href="{% url 'dashboard' %}" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Data Format Requirements</h5>
+            </div>
+            <div class="card-body">
+                <p>Your CSV file should contain the following columns:</p>
+                <ul>
+                    <li><strong>Year</strong> - The year of the tourism data</li>
+                    <li><strong>Country</strong> - The destination country</li>
+                    <li><strong>Region</strong> - The geographical region</li>
+                    <li><strong>Visitor_Count</strong> - Number of visitors</li>
+                    <li><strong>Visitor_Type</strong> - Type of visitor (Business/Leisure)</li>
+                    <li><strong>Season</strong> - The season of the visit</li>
+                    <li><strong>Age_Group</strong> - Age group of visitors</li>
+                </ul>
+                <p class="mb-0">Example row:</p>
+                <pre class="bg-light p-2">2023,France,Europe,1500000,Business,Spring,18-24</pre>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
