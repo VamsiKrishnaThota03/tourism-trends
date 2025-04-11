@@ -1,53 +1,110 @@
 # Tourism Trends Analyzer
 
-A comprehensive analysis tool for visualizing and understanding global tourism trends.
+A comprehensive Django web application for analyzing and visualizing global tourism trends.
 
 ## Features
 
-- Interactive dashboard for tourism data visualization
-- Analysis of yearly trends and seasonal patterns
-- Regional comparison of tourist destinations
-- Visitor demographics analysis
-- Export capabilities for Tableau integration
+- Interactive dashboard with real-time data visualization
+- Data upload functionality for CSV files
+- Analysis of yearly trends, regional distribution, and visitor demographics
+- Custom visualization creation
+- Tableau integration for advanced analytics
+- User authentication and data management
 
 ## Setup
 
-1. Install dependencies:
+1. Clone the repository:
+```bash
+git clone https://github.com/VamsiKrishnaThota03/tourism-trends.git
+cd tourism-trends
+```
+
+2. Create and activate a virtual environment:
+```bash
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+```
+
+3. Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-2. Place your tourism data CSV files in the `data` directory
-
-3. Run the analysis:
+4. Run migrations:
 ```bash
-python src/main.py
+python manage.py migrate
 ```
+
+5. Create a superuser (admin):
+```bash
+python manage.py createsuperuser
+```
+
+6. Start the development server:
+```bash
+python manage.py runserver
+```
+
+7. Access the application at http://127.0.0.1:8000/
 
 ## Project Structure
 
-- `src/` - Source code
-  - `main.py` - Main application entry point
-  - `data_processor.py` - Data processing and analysis
-  - `visualizer.py` - Visualization components
-- `data/` - Data directory for CSV files
-- `output/` - Generated visualizations and reports
+- `tourism_analyzer/` - Main Django project directory
+  - `settings.py` - Project settings
+  - `urls.py` - Main URL routing
+- `tourism_dashboard/` - Main application
+  - `models.py` - Data models
+  - `views.py` - View functions
+  - `urls.py` - Application URL routing
+  - `forms.py` - Form definitions
+- `templates/` - HTML templates
+  - `tourism_dashboard/` - Application templates
+- `static/` - Static files (CSS, JavaScript, images)
+- `data/` - Sample data files
 
 ## Data Requirements
 
-The system expects CSV files with the following columns:
+The application accepts CSV files with the following columns:
 - Year
 - Country
 - Region
-- Visitor Count
-- Visitor Type (Business/Leisure)
+- Visitor_Count
+- Visitor_Type (Business/Leisure)
 - Season
-- Demographics (Age Groups)
+- Age_Group
 
-## Output
+## Features in Detail
 
-The system generates:
-1. Interactive web dashboard
-2. CSV exports for Tableau
-3. Static visualizations
-4. Analysis reports 
+### Dashboard
+- Interactive visualizations of tourism trends
+- Filtering by year range, region, and visitor type
+- Real-time data updates
+
+### Data Management
+- Upload CSV files with tourism data
+- View and manage uploaded datasets
+- Data validation and error handling
+
+### Visualization
+- Yearly trends analysis
+- Regional distribution charts
+- Visitor demographics breakdown
+- Custom visualization creation
+
+### Tableau Integration
+- Export data for Tableau
+- Embed Tableau visualizations
+- Direct connection via Web Data Connector
+
+## Technologies Used
+
+- Django 3.2
+- Python 3.11
+- Plotly.js for visualizations
+- Bootstrap 5 for UI
+- SQLite database (default)
+- Tableau integration
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details. 
