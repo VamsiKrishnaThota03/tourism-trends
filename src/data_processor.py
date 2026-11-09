@@ -1,6 +1,4 @@
 import pandas as pd
-import numpy as np
-from typing import Dict, List, Tuple
 import os
 
 class TourismDataProcessor:

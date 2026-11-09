@@ -1,7 +1,7 @@
 import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
-from typing import Dict, List
+from typing import Dict
 import os
 
 class TourismVisualizer:
@@ -128,7 +128,8 @@ class TourismVisualizer:
     def save_visualization(self, fig: go.Figure, filename: str) -> None:
         """Save visualization to HTML file."""
         file_path = os.path.join(self.output_dir, filename)
-        fig.write_html(file_path)
+        # Load plotly.js from the CDN instead of inlining ~3.5 MB into every file.
+        fig.write_html(file_path, include_plotlyjs='cdn')
     
     def create_dashboard(self, data_dict: Dict[str, pd.DataFrame]) -> None:
         """Create and save all visualizations for the dashboard."""

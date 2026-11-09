@@ -1,18 +1,23 @@
-import os
+from pathlib import Path
+
 from data_processor import TourismDataProcessor
 from visualizer import TourismVisualizer
-import pandas as pd
-from typing import Dict
+
+# Resolve data/ and output/ relative to the repository, not the current directory.
+ROOT = Path(__file__).resolve().parent.parent
+DATA_DIR = ROOT / "data"
+OUTPUT_DIR = ROOT / "output"
+
 
 def main():
     # Initialize components
-    data_processor = TourismDataProcessor()
-    visualizer = TourismVisualizer()
+    data_processor = TourismDataProcessor(data_dir=str(DATA_DIR))
+    visualizer = TourismVisualizer(output_dir=str(OUTPUT_DIR))
     
     try:
         # Load and process data
         print("Loading tourism data...")
-        data = data_processor.load_data("tourism_data.csv")
+        data_processor.load_data("tourism_data.csv")
         
         # Process data for different views
         print("Processing data...")
@@ -30,14 +35,14 @@ def main():
         
         # Export data for Tableau
         print("Exporting data for Tableau...")
-        data_processor.export_for_tableau()
+        data_processor.export_for_tableau(output_dir=str(OUTPUT_DIR))
         
-        print("\nAnalysis complete! Check the 'output' directory for:")
+        print(f"\nAnalysis complete! Check {OUTPUT_DIR} for:")
         print("1. Interactive HTML visualizations")
         print("2. CSV files ready for Tableau import")
         
     except FileNotFoundError:
-        print("Error: tourism_data.csv not found in the data directory.")
+        print(f"Error: tourism_data.csv not found in {DATA_DIR}.")
         print("Please ensure your data file is in the correct format and location.")
     except Exception as e:
         print(f"An error occurred: {str(e)}")
