@@ -1,116 +1,69 @@
-<!DOCTYPE html>
-<html>
+{% load static %}<!DOCTYPE html>
+<html lang="en">
 <head>
-    <title>Tourism Trends Analyzer - Tableau WDC</title>
-    <script type="text/javascript" src="https://connectors.tableau.com/libs/tableauwdc-2.3.latest.js"></script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-        }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        label {
-            display: block;
-            margin-bottom: 5px;
-        }
-        input[type="text"] {
-            width: 100%;
-            padding: 8px;
-            box-sizing: border-box;
-        }
-        button {
-            background-color: #4CAF50;
-            color: white;
-            padding: 10px 15px;
-            border: none;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-    </style>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Tableau Web Data Connector · Tourism Trends Analyzer</title>
+    <link rel="icon" href="{% static 'img/favicon.svg' %}" type="image/svg+xml">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+    <link href="{% static 'css/app.css' %}" rel="stylesheet">
+    <script src="https://connectors.tableau.com/libs/tableauwdc-2.3.latest.js"></script>
 </head>
 <body>
-    <div class="container">
-        <h1>Tourism Trends Analyzer - Tableau Web Data Connector</h1>
-        <p>This connector allows Tableau to directly access your tourism data.</p>
-        
-        <div class="form-group">
-            <label for="authToken">Authentication Token (Optional):</label>
-            <input type="text" id="authToken" placeholder="Enter your authentication token">
+    <main class="container">
+        <div class="auth-wrap">
+            <div class="card">
+                <div class="card-body p-4 text-center">
+                    <img src="{% static 'img/favicon.svg' %}" alt="" width="48" height="48" class="mb-3">
+                    <h1 class="h4 fw-bold">Tourism data for Tableau</h1>
+                    <p class="text-secondary">Signed in as <strong>{{ user.username }}</strong>. Click connect to load your records into Tableau.</p>
+                    <button id="submitButton" class="btn btn-primary btn-lg w-100">Connect to data</button>
+                    <p id="wdcStatus" class="small text-secondary mt-3 mb-0" role="status"></p>
+                </div>
+            </div>
         </div>
-        
-        <button id="submitButton">Connect to Data</button>
-    </div>
+    </main>
 
     <script>
-        // Define the connector
-        var myConnector = tableau.makeConnector();
-        
-        // Define the schema
-        myConnector.getSchema = function(schemaCallback) {
-            var cols = [
-                {id: "Year", dataType: tableau.dataTypeEnum.int},
-                {id: "Country", dataType: tableau.dataTypeEnum.string},
-                {id: "Region", dataType: tableau.dataTypeEnum.string},
-                {id: "Visitor_Count", dataType: tableau.dataTypeEnum.int},
-                {id: "Visitor_Type", dataType: tableau.dataTypeEnum.string},
-                {id: "Season", dataType: tableau.dataTypeEnum.string},
-                {id: "Age_Group", dataType: tableau.dataTypeEnum.string}
-            ];
-            
-            var tableSchema = {
-                id: "tourismData",
-                alias: "Tourism Data",
-                columns: cols
-            };
-            
-            schemaCallback([tableSchema]);
+    (function () {
+        const dataUrl = '{% url "tableau_wdc_data" %}';
+        const status = document.getElementById('wdcStatus');
+        if (typeof tableau === 'undefined') {
+            status.textContent = 'Open this page from Tableau (Connect → Web Data Connector).';
+            document.getElementById('submitButton').disabled = true;
+            return;
+        }
+        const connector = tableau.makeConnector();
+
+        connector.getSchema = function (schemaCallback) {
+            schemaCallback([{
+                id: 'tourismData',
+                alias: 'Tourism Data',
+                columns: [
+                    { id: 'Year', dataType: tableau.dataTypeEnum.int },
+                    { id: 'Country', dataType: tableau.dataTypeEnum.string },
+                    { id: 'Region', dataType: tableau.dataTypeEnum.string },
+                    { id: 'Visitor_Count', dataType: tableau.dataTypeEnum.int },
+                    { id: 'Visitor_Type', dataType: tableau.dataTypeEnum.string },
+                    { id: 'Season', dataType: tableau.dataTypeEnum.string },
+                    { id: 'Age_Group', dataType: tableau.dataTypeEnum.string },
+                ],
+            }]);
         };
-        
-        // Define the data
-        myConnector.getData = function(table, doneCallback) {
-            var authToken = document.getElementById("authToken").value;
-            
-            // Make an AJAX request to our API
-            $.ajax({
-                url: window.location.href,
-                type: "POST",
-                data: {
-                    auth_token: authToken
-                },
-                success: function(response) {
-                    var data = response.data;
-                    
-                    // Add the data to the table
-                    table.appendRows(data);
-                    doneCallback();
-                },
-                error: function(xhr, status, error) {
-                    console.error("Error fetching data:", error);
-                    doneCallback();
-                }
-            });
+
+        connector.getData = function (table, doneCallback) {
+            fetch(dataUrl, { credentials: 'same-origin', headers: { Accept: 'application/json' } })
+                .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+                .then(body => { table.appendRows(body.data); doneCallback(); })
+                .catch(err => tableau.abortWithError('Could not load data: ' + err.message));
         };
-        
-        // Register the connector
-        tableau.registerConnector(myConnector);
-        
-        // Handle the submit button click
-        $(document).ready(function() {
-            $("#submitButton").click(function() {
-                tableau.connectionName = "Tourism Trends Data";
-                tableau.submit();
-            });
+
+        tableau.registerConnector(connector);
+        document.getElementById('submitButton').addEventListener('click', function () {
+            tableau.connectionName = 'Tourism Trends Data';
+            tableau.submit();
         });
+    })();
     </script>
-    
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </body>
-</html> 
+</html>

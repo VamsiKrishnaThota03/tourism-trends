@@ -1,0 +1,36 @@
+{% extends 'tourism_dashboard/base.html' %}
+{% block title %}Log in{% endblock %}
+
+{% block content %}
+<div class="auth-wrap">
+    <div class="text-center mb-4">
+        <h1 class="h3 fw-bold mb-1">Welcome back</h1>
+        <p class="text-secondary mb-0">Log in to explore your tourism data.</p>
+    </div>
+    <div class="card">
+        <div class="card-body p-4">
+            {% if form.errors %}
+            <div class="alert alert-danger" role="alert">
+                Your username and password didn't match. Please try again.
+            </div>
+            {% endif %}
+            <form method="post" novalidate>
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ next }}">
+                <div class="mb-3">
+                    <label for="id_username" class="form-label">Username</label>
+                    <input type="text" class="form-control form-control-lg" id="id_username" name="username" value="{{ form.username.value|default:'' }}" autocomplete="username" autofocus required>
+                </div>
+                <div class="mb-4">
+                    <label for="id_password" class="form-label">Password</label>
+                    <input type="password" class="form-control form-control-lg" id="id_password" name="password" autocomplete="current-password" required>
+                </div>
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary btn-lg">Log in</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <p class="text-center text-secondary small mt-3">No account? Ask an administrator to create one.</p>
+</div>
+{% endblock %}

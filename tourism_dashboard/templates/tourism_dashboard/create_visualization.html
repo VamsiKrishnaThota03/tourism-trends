@@ -1,0 +1,71 @@
+{% extends 'tourism_dashboard/base.html' %}
+{% load static crispy_forms_tags %}
+{% block title %}New chart{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>New chart</h1>
+        <p>Pick a chart type and the data to show. The preview updates as you change options.</p>
+    </div>
+</div>
+
+{% if not has_data %}
+<div class="alert alert-info d-flex align-items-center gap-2" role="status">
+    <i class="bi bi-info-circle" aria-hidden="true"></i>
+    <div>You have no data yet, so the preview will be empty. <a href="{% url 'upload_data' %}" class="alert-link">Upload a CSV</a> first.</div>
+</div>
+{% endif %}
+
+<div class="row g-4">
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-body p-4">
+                <form method="post" id="visualizationForm" novalidate>
+                    {% csrf_token %}
+                    {{ form.title|as_crispy_field }}
+                    {{ form.chart_type|as_crispy_field }}
+                    <div class="row g-2">
+                        <div class="col-6">{{ form.x_axis|as_crispy_field }}</div>
+                        <div class="col-6">{{ form.y_axis|as_crispy_field }}</div>
+                    </div>
+                    {{ form.years|as_crispy_field }}
+                    {{ form.regions|as_crispy_field }}
+                    <div class="d-flex gap-2 mt-2">
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Save chart</button>
+                        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-8">
+        <div class="card h-100">
+            <div class="card-header"><h2 class="card-title mb-0">Preview</h2></div>
+            <div class="card-body"><div id="previewChart" class="chart-box tall"></div></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+<script src="{% static 'js/charts.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('visualizationForm');
+    const preview = document.getElementById('previewChart');
+    const base = '{% url "chart_preview" %}';
+    let timer;
+
+    function updatePreview() {
+        const params = new URLSearchParams(new FormData(form));
+        params.delete('csrfmiddlewaretoken');
+        window.TourismCharts.loadFigure(preview, base + '?' + params.toString());
+    }
+    form.addEventListener('change', updatePreview);
+    form.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(updatePreview, 400); });
+    updatePreview();
+});
+</script>
+{% endblock %}

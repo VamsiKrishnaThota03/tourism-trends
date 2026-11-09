@@ -1,0 +1,64 @@
+{% extends 'tourism_dashboard/base.html' %}
+{% load crispy_forms_tags %}
+{% block title %}Upload data{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Upload tourism data</h1>
+        <p>Import a CSV file. Rows are added to your own dataset.</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="card">
+            <div class="card-body p-4">
+                <form method="post" enctype="multipart/form-data" id="uploadForm">
+                    {% csrf_token %}
+                    {{ form|crispy }}
+                    <div class="d-flex gap-2 mt-3">
+                        <button type="submit" class="btn btn-primary" id="uploadBtn">
+                            <span class="spinner-border spinner-border-sm me-1 d-none" role="status" aria-hidden="true"></span>
+                            <i class="bi bi-upload me-1"></i>Upload
+                        </button>
+                        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="card h-100">
+            <div class="card-header"><h2 class="card-title mb-0">CSV format</h2></div>
+            <div class="card-body">
+                <p class="text-secondary">The first row must contain these column names:</p>
+                <ul class="list-unstyled small mb-3">
+                    <li class="mb-1"><code>Year</code> – e.g. 2023</li>
+                    <li class="mb-1"><code>Country</code> – destination country</li>
+                    <li class="mb-1"><code>Region</code> – geographical region</li>
+                    <li class="mb-1"><code>Visitor_Count</code> – whole number</li>
+                    <li class="mb-1"><code>Visitor_Type</code> – e.g. Business, Leisure</li>
+                    <li class="mb-1"><code>Season</code> – e.g. Spring</li>
+                    <li class="mb-1"><code>Age_Group</code> – e.g. 18-24</li>
+                </ul>
+                <p class="small text-secondary mb-1">Example:</p>
+                <pre class="bg-light border rounded p-2 small mb-0">Year,Country,Region,Visitor_Count,Visitor_Type,Season,Age_Group
+2023,France,Europe,1500000,Business,Spring,18-24</pre>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('uploadForm').addEventListener('submit', function () {
+    const btn = document.getElementById('uploadBtn');
+    btn.disabled = true;
+    btn.querySelector('.spinner-border').classList.remove('d-none');
+    btn.querySelector('.bi').classList.add('d-none');
+});
+</script>
+{% endblock %}

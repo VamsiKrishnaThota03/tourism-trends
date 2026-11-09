@@ -1,171 +1,241 @@
-{% extends 'base.html' %}
-{% load static %}
+{% extends 'tourism_dashboard/base.html' %}
+{% load static humanize_tags %}
+{% block title %}Dashboard{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <h1 class="mb-4">Tourism Trends Dashboard</h1>
-    
-    <!-- Filters Section -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <form id="filterForm" class="row g-3">
+<div class="page-header">
+    <div>
+        <h1>Tourism trends</h1>
+        <p>Visitor numbers by year, region and visitor type for your uploaded data.</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <a href="{% url 'upload_data' %}" class="btn btn-outline-primary"><i class="bi bi-upload me-1"></i>Upload CSV</a>
+        <a href="{% url 'create_visualization' %}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>New chart</a>
+    </div>
+</div>
+
+{% if not record_count %}
+<div class="card">
+    <div class="card-body empty-state">
+        <div class="icon mb-2"><i class="bi bi-cloud-arrow-up" aria-hidden="true"></i></div>
+        <h2 class="h5 fw-semibold">No data yet</h2>
+        <p class="text-secondary mb-4">Upload a CSV with yearly visitor counts, or start with the bundled sample dataset.</p>
+        <div class="d-flex flex-wrap justify-content-center gap-2">
+            <a href="{% url 'upload_data' %}" class="btn btn-primary"><i class="bi bi-upload me-1"></i>Upload CSV</a>
+            <form method="post" action="{% url 'load_sample_data' %}" class="m-0">
                 {% csrf_token %}
-                <div class="col-md-4">
-                    <label for="yearRange" class="form-label">Year Range</label>
-                    <select class="form-select" id="yearRange" name="year_range">
-                        <option value="">All Years</option>
-                        {% for year in years %}
-                            <option value="{{ year }}-{{ year }}">{{ year }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-4">
-                    <label for="region" class="form-label">Region</label>
-                    <select class="form-select" id="region" name="region">
-                        <option value="">All Regions</option>
-                        {% for region in regions %}
-                            <option value="{{ region }}">{{ region }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-4">
-                    <label for="visitorType" class="form-label">Visitor Type</label>
-                    <select class="form-select" id="visitorType" name="visitor_type">
-                        <option value="">All Types</option>
-                        {% for type in visitor_types %}
-                            <option value="{{ type }}">{{ type }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-12">
-                    <button type="submit" class="btn btn-primary">Apply Filters</button>
-                </div>
+                <button type="submit" class="btn btn-outline-secondary"><i class="bi bi-database-add me-1"></i>Load sample data</button>
             </form>
         </div>
     </div>
+</div>
+{% else %}
 
-    <!-- Visualizations Section -->
-    <div class="row">
-        <!-- Yearly Trends -->
-        <div class="col-md-12 mb-4">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">Yearly Tourism Trends</h5>
-                    <div id="yearlyTrendsChart" style="height: 400px;"></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Regional Distribution -->
-        <div class="col-md-6 mb-4">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">Regional Distribution</h5>
-                    <div id="regionalDistributionChart" style="height: 400px;"></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Demographics -->
-        <div class="col-md-6 mb-4">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">Visitor Demographics</h5>
-                    <div id="demographicsChart" style="height: 400px;"></div>
-                </div>
-            </div>
-        </div>
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="card stat-card h-100"><div class="d-flex justify-content-between align-items-start">
+            <div><div class="label">Total visitors</div><div class="value">{{ total_visitors|compact_number }}</div></div>
+            <div class="icon bg-primary-subtle text-primary"><i class="bi bi-people" aria-hidden="true"></i></div>
+        </div></div>
     </div>
-
-    <!-- Custom Visualizations Section -->
-    {% if custom_visualizations %}
-    <div class="row mt-4">
-        <h3>Custom Visualizations</h3>
-        {% for viz in custom_visualizations %}
-        <div class="col-md-6 mb-4">
-            <div class="card custom-visualization">
-                <div class="card-body">
-                    <h5 class="card-title">{{ viz.title }}</h5>
-                    <div id="customViz{{ viz.id }}" style="height: 400px;"></div>
-                    <button class="btn btn-danger btn-sm delete-visualization" data-viz-id="{{ viz.id }}">
-                        Delete
-                    </button>
-                </div>
-            </div>
-        </div>
-        {% endfor %}
+    <div class="col-6 col-lg-3">
+        <div class="card stat-card h-100"><div class="d-flex justify-content-between align-items-start">
+            <div><div class="label">Countries</div><div class="value">{{ country_count }}</div></div>
+            <div class="icon bg-success-subtle text-success"><i class="bi bi-globe2" aria-hidden="true"></i></div>
+        </div></div>
     </div>
-    {% endif %}
+    <div class="col-6 col-lg-3">
+        <div class="card stat-card h-100"><div class="d-flex justify-content-between align-items-start">
+            <div><div class="label">Years</div><div class="value">{{ years|first }}{% if years|length > 1 %}–{{ years|last }}{% endif %}</div></div>
+            <div class="icon bg-warning-subtle text-warning-emphasis"><i class="bi bi-calendar3" aria-hidden="true"></i></div>
+        </div></div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card stat-card h-100"><div class="d-flex justify-content-between align-items-start">
+            <div><div class="label">Records</div><div class="value">{{ record_count }}</div></div>
+            <div class="icon bg-info-subtle text-info-emphasis"><i class="bi bi-table" aria-hidden="true"></i></div>
+        </div></div>
+    </div>
 </div>
 
-<!-- Include Plotly.js -->
-<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<div class="row g-4">
+    <div class="col-lg-3">
+        <div class="card">
+            <div class="card-header"><h2 class="card-title mb-0"><i class="bi bi-funnel me-1"></i>Filters</h2></div>
+            <div class="card-body">
+                <form id="filterForm">
+                    <div class="mb-3">
+                        <label for="yearRange" class="form-label">Year</label>
+                        <select class="form-select" id="yearRange" name="year_range">
+                            <option value="">All years</option>
+                            {% if years|length > 1 %}<option value="{{ years|first }}-{{ years|last }}">{{ years|first }}–{{ years|last }}</option>{% endif %}
+                            {% for year in years %}
+                            <option value="{{ year }}">{{ year }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="region" class="form-label">Region</label>
+                        <select class="form-select" id="region" name="region">
+                            <option value="">All regions</option>
+                            {% for region in regions %}
+                            <option value="{{ region }}">{{ region }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="visitorType" class="form-label">Visitor type</label>
+                        <select class="form-select" id="visitorType" name="visitor_type">
+                            <option value="">All types</option>
+                            {% for type in visitor_types %}
+                            <option value="{{ type }}">{{ type }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">Apply filters</button>
+                        <button type="reset" class="btn btn-outline-secondary" id="resetFilters">Reset</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 
+    <div class="col-lg-9">
+        <div class="card">
+            <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <h2 class="card-title mb-0">Overview</h2>
+                <div class="btn-group btn-group-sm view-switch" role="group" aria-label="Main chart">
+                    <button type="button" class="btn btn-outline-primary" data-view="yearly_trends">Yearly trends</button>
+                    <button type="button" class="btn btn-outline-primary" data-view="regional_distribution">Regional</button>
+                    <button type="button" class="btn btn-outline-primary" data-view="demographics">Visitor types</button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="mainVisualization" class="chart-box tall"></div>
+            </div>
+        </div>
+
+        <div class="row g-4 mt-0">
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-header"><h2 class="card-title mb-0">Regional distribution</h2></div>
+                    <div class="card-body"><div id="regionalDistributionChart" class="chart-box"></div></div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-header"><h2 class="card-title mb-0">Visitor types</h2></div>
+                    <div class="card-body"><div id="demographicsChart" class="chart-box"></div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="card mt-4 mb-2">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h2 class="card-title mb-0">Saved charts</h2>
+        <a href="{% url 'create_visualization' %}" class="btn btn-sm btn-outline-primary"><i class="bi bi-plus-lg"></i> New</a>
+    </div>
+    <div class="card-body">
+        {% if custom_visualizations %}
+        <div class="row g-3">
+            {% for viz in custom_visualizations %}
+            <div class="col-md-6 col-xl-4">
+                <div class="card viz-card h-100">
+                    <div class="card-header">
+                        <h3 class="card-title h6 mb-0 text-truncate" title="{{ viz.title }}">{{ viz.title }}</h3>
+                        <form method="post" action="{% url 'delete_visualization' viz.id %}" class="m-0 delete-viz-form">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-outline-danger btn-icon" aria-label="Delete {{ viz.title }}" title="Delete">
+                                <i class="bi bi-trash" aria-hidden="true"></i>
+                            </button>
+                        </form>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-box custom-viz" data-url="{% url 'custom_visualization_data' viz.id %}"></div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-secondary mb-0">No saved charts yet. <a href="{% url 'create_visualization' %}">Create one</a> to pin it here.</p>
+        {% endif %}
+    </div>
+</div>
+
+{{ default_view|json_script:"default-view" }}
+{{ custom_filters|json_script:"saved-filters" }}
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+<script src="{% static 'js/charts.js' %}"></script>
 <script>
-    // Initialize visualizations when the page loads
-    document.addEventListener('DOMContentLoaded', function() {
-        loadVisualization('yearly_trends');
+document.addEventListener('DOMContentLoaded', function () {
+    const { loadFigure, csrfToken } = window.TourismCharts;
+    const apiBase = '{% url "visualization_data" "VIEW" %}';
+    const form = document.getElementById('filterForm');
+    let currentView = JSON.parse(document.getElementById('default-view').textContent);
+
+    document.querySelectorAll('.custom-viz').forEach(el => loadFigure(el, el.dataset.url));
+    document.querySelectorAll('.delete-viz-form').forEach(f => f.addEventListener('submit', e => {
+        if (!confirm('Delete this chart?')) e.preventDefault();
+    }));
+
+    if (!form) return;  // empty state: no data yet
+
+    const saved = JSON.parse(document.getElementById('saved-filters').textContent) || {};
+    [['yearRange', 'year_range'], ['region', 'region'], ['visitorType', 'visitor_type']].forEach(([id, key]) => {
+        const select = document.getElementById(id);
+        if (saved[key] && [...select.options].some(o => o.value === saved[key])) select.value = saved[key];
     });
 
-    function loadVisualization(viewType) {
-        const yearRange = document.getElementById('yearRange').value;
-        const region = document.getElementById('region').value;
-        const visitorType = document.getElementById('visitorType').value;
-        
-        // Make an AJAX call to get the visualization data
-        fetch(`/api/visualization/${viewType}/?year_range=${yearRange}&region=${region}&visitor_type=${visitorType}`)
-            .then(response => response.json())
-            .then(data => {
-                updateVisualizations(data);
-            })
-            .catch(error => console.error('Error:', error));
+    function filterParams() {
+        return new URLSearchParams(new FormData(form)).toString();
+    }
+    function url(view) { return apiBase.replace('VIEW', view) + '?' + filterParams(); }
+
+    function setActive(view) {
+        document.querySelectorAll('[data-view]').forEach(btn => {
+            const on = btn.dataset.view === view;
+            btn.classList.toggle('active', on);
+            btn.setAttribute('aria-pressed', on);
+        });
     }
 
-    function updateVisualizations(data) {
-        // Update yearly trends chart
-        if (data.yearly_trends) {
-            const yearlyChart = document.getElementById('yearlyTrendsChart');
-            Plotly.newPlot(yearlyChart, data.yearly_trends.data, data.yearly_trends.layout);
-        }
-
-        // Update regional distribution chart
-        if (data.regional_distribution) {
-            const regionalChart = document.getElementById('regionalDistributionChart');
-            Plotly.newPlot(regionalChart, data.regional_distribution.data, data.regional_distribution.layout);
-        }
-
-        // Update demographics chart
-        if (data.demographics) {
-            const demographicsChart = document.getElementById('demographicsChart');
-            Plotly.newPlot(demographicsChart, data.demographics.data, data.demographics.layout);
-        }
+    function refreshAll() {
+        loadFigure(document.getElementById('mainVisualization'), url(currentView), currentView);
+        loadFigure(document.getElementById('regionalDistributionChart'), url('regional_distribution'), 'regional_distribution');
+        loadFigure(document.getElementById('demographicsChart'), url('demographics'), 'demographics');
     }
 
-    // Handle form submission for filters
-    document.getElementById('filterForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        loadVisualization('yearly_trends');
-    });
+    function savePreferences() {
+        fetch('{% url "update_preferences" %}', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken() },
+            body: JSON.stringify({ default_view: currentView, custom_filters: Object.fromEntries(new FormData(form)) }),
+        }).catch(() => {});
+    }
 
-    // Handle custom visualization deletion
-    document.querySelectorAll('.delete-visualization').forEach(button => {
-        button.addEventListener('click', function() {
-            if (confirm('Are you sure you want to delete this visualization?')) {
-                const vizId = this.dataset.vizId;
-                fetch(`/delete-visualization/${vizId}/`, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-                    }
-                })
-                .then(response => {
-                    if (response.ok) {
-                        this.closest('.custom-visualization').remove();
-                    }
-                })
-                .catch(error => console.error('Error:', error));
-            }
+    document.querySelectorAll('[data-view]').forEach(button => {
+        button.addEventListener('click', function () {
+            currentView = this.dataset.view;
+            setActive(currentView);
+            loadFigure(document.getElementById('mainVisualization'), url(currentView), currentView);
+            savePreferences();
         });
     });
+
+    form.addEventListener('submit', e => { e.preventDefault(); refreshAll(); savePreferences(); });
+    form.addEventListener('reset', () => setTimeout(() => { refreshAll(); savePreferences(); }, 0));
+
+    setActive(currentView);
+    refreshAll();
+});
 </script>
-{% endblock %} 
+{% endblock %}
