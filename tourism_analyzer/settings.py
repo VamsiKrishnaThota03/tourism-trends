@@ -124,3 +124,28 @@ if not DEBUG:
     SESSION_COOKIE_SECURE = env_bool('DJANGO_SECURE_COOKIES', True)
     CSRF_COOKIE_SECURE = env_bool('DJANGO_SECURE_COOKIES', True)
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+    # Cookies are never read by JavaScript here, and SameSite=Lax stops them
+    # riding along on cross-site requests — the other half of CSRF defence.
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    CSRF_COOKIE_SAMESITE = 'Lax'
+
+    # `manage.py check --deploy` flagged both of these as missing (W008, W004).
+    #
+    # They default on but stay overridable, because enabling HSTS is effectively
+    # irreversible for the length of max-age: a browser that has seen the header
+    # refuses plain HTTP to this host until it expires. Anyone deploying onto a
+    # plain-HTTP host needs to turn it off up front rather than discover the
+    # lockout afterwards.
+    SECURE_SSL_REDIRECT = env_bool('DJANGO_SSL_REDIRECT', True)
+    SECURE_HSTS_SECONDS = int(os.environ.get('DJANGO_HSTS_SECONDS', 31536000))
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = env_bool('DJANGO_HSTS_INCLUDE_SUBDOMAINS', True)
+    # Preload is deliberately NOT on by default: submitting a domain to the
+    # browser preload list is genuinely permanent, so it should be a choice.
+    SECURE_HSTS_PRELOAD = env_bool('DJANGO_HSTS_PRELOAD', False)
+
+    # Defence in depth alongside Django's own template escaping.
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
+    X_FRAME_OPTIONS = 'DENY'

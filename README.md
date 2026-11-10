@@ -9,6 +9,10 @@ A Django web app for uploading tourism datasets and exploring them through inter
 ![Bootstrap](https://img.shields.io/badge/Bootstrap-5-7952B3?logo=bootstrap&logoColor=white)
 ![SQLite](https://img.shields.io/badge/SQLite-003B57?logo=sqlite&logoColor=white)
 
+[![CI](https://github.com/VamsiKrishnaThota03/tourism-trends/actions/workflows/ci.yml/badge.svg)](https://github.com/VamsiKrishnaThota03/tourism-trends/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/VamsiKrishnaThota03/tourism-trends/actions/workflows/codeql.yml/badge.svg)](https://github.com/VamsiKrishnaThota03/tourism-trends/actions/workflows/codeql.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 ## Overview
 
 The project has two parts:
@@ -186,3 +190,73 @@ All endpoints except login require a logged-in user and only read or change that
 ## Contact
 
 Thota Vamsi Krishna — [GitHub](https://github.com/VamsiKrishnaThota03)
+
+
+## Deployment security
+
+`python manage.py check --deploy` reported two real gaps: `SECURE_HSTS_SECONDS`
+and `SECURE_SSL_REDIRECT` were unset (`security.W004`, `security.W008`). Both
+are now configured, along with `SESSION_COOKIE_HTTPONLY`, `SameSite=Lax` on
+both cookies, `SECURE_CONTENT_TYPE_NOSNIFF`, `X_FRAME_OPTIONS = DENY` and
+`SECURE_REFERRER_POLICY`.
+
+They are set inside `if not DEBUG`, and each one is overridable by an
+environment variable. That is deliberate: **enabling HSTS is effectively
+irreversible** for the length of `max-age`, because a browser that has seen the
+header will refuse plain HTTP to that host until it expires. Someone deploying
+onto a plain-HTTP host needs to turn it off up front rather than discover the
+lockout afterwards.
+
+| Variable | Default | Notes |
+| --- | --- | --- |
+| `DJANGO_SSL_REDIRECT` | `true` | Set `false` behind a proxy that already redirects |
+| `DJANGO_HSTS_SECONDS` | `31536000` | Set `0` to disable |
+| `DJANGO_HSTS_INCLUDE_SUBDOMAINS` | `true` | |
+| `DJANGO_HSTS_PRELOAD` | **`false`** | Left off on purpose — submitting a domain to the browser preload list is permanent |
+| `DJANGO_SECURE_COOKIES` | `true` | Set `false` only for plain-HTTP local runs |
+
+`check --deploy` is now clean apart from `W021`, which is the preload opt-out
+above. CI asserts exactly that: any *other* security warning fails the build.
+
+## Tests
+
+```bash
+python manage.py test        # 26 tests
+```
+
+The 16 existing tests cover uploads, filtering and the saved-visualisation
+views. The 10 added cover the settings themselves — a settings file is exactly
+the kind of thing edited without anyone re-running the deploy check. They
+re-import the module with `DEBUG` forced off (the test runner runs with it on)
+and assert the SSL redirect, the HSTS values, the preload opt-out, every cookie
+flag, the nosniff/framing/referrer headers, that `ALLOWED_HOSTS` is not `*`, and
+that a missing `DJANGO_SECRET_KEY` raises `ImproperlyConfigured` rather than
+falling back to the insecure local key.
+
+## Continuous integration
+
+| Job | What it proves |
+| --- | --- |
+| `test` (Python 3.11, 3.12) | `manage.py check`, that no migration is missing (`makemigrations --check`), and the 26 tests |
+| `deploy-check` | `check --deploy --fail-level WARNING` produces no warning other than the deliberate `W021`, and that a missing `DJANGO_SECRET_KEY` stops the app instead of falling back |
+| `docker` | The image builds |
+
+CodeQL runs over Python weekly and on every push; Dependabot watches pip,
+Actions and the Dockerfile.
+
+## Docker
+
+```bash
+printf 'DJANGO_SECRET_KEY=%s\n' \
+  "$(python3 -c 'import secrets;print(secrets.token_urlsafe(64))')" > .env
+
+docker compose up --build
+open http://localhost:8000
+```
+
+Runs under gunicorn as a non-root user, with static files collected at build
+time so the container needs no write access to the image. The port publishes to
+`127.0.0.1` only; gunicorn binds all interfaces *inside* the container, which is
+correct — the publish is the security boundary. Compose fails fast with a named
+error if `DJANGO_SECRET_KEY` is missing, and turns the HTTPS redirect and secure
+cookies off, since the local container is reached over plain HTTP.

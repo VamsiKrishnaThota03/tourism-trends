@@ -1,0 +1,31 @@
+# Local run of the dashboard under gunicorn, as it would be deployed.
+#
+# The published port is bound to 127.0.0.1, so the container is not reachable
+# from the local network. Inside the container gunicorn binds all interfaces,
+# which is correct — the publish is the boundary.
+#
+#   printf 'DJANGO_SECRET_KEY=%s\n' "$(python3 -c 'import secrets;print(secrets.token_urlsafe(64))')" > .env
+#   docker compose up --build
+#   open http://localhost:8000
+
+services:
+  web:
+    build: .
+    restart: unless-stopped
+    environment:
+      DJANGO_DEBUG: 'false'
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?set DJANGO_SECRET_KEY in .env}
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+      # The container is reached over plain HTTP on loopback, so the HTTPS
+      # redirect and secure-cookie flags would make it unusable locally.
+      DJANGO_SSL_REDIRECT: 'false'
+      DJANGO_SECURE_COOKIES: 'false'
+      DJANGO_HSTS_SECONDS: '0'
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      # Persist the SQLite database and uploads across container restarts.
+      - sqlite-data:/app/data
+
+volumes:
+  sqlite-data:
