@@ -86,16 +86,7 @@ jobs:
           export DJANGO_SECRET_KEY="$(python -c 'import secrets;print(secrets.token_urlsafe(64))')"
           # Proves the silence is conditional, not a blanket suppression.
           python manage.py check --deploy --fail-level WARNING
-          python -c "
-          import os, django
-          os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'tourism_analyzer.settings')
-          django.setup()
-          from django.conf import settings
-          assert settings.SECURE_HSTS_PRELOAD is True, 'preload should be on'
-          assert not getattr(settings, 'SILENCED_SYSTEM_CHECKS', []), \
-              'W021 must not stay silenced once preload is enabled'
-          print('silence is conditional, as intended')
-          "
+          python scripts/check_preload_silence.py
 
       - name: A missing SECRET_KEY must stop the app, not fall back
         env:
