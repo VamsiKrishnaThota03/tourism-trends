@@ -62,24 +62,40 @@ jobs:
           cache-dependency-path: requirements.txt
       - run: pip install -r requirements.txt
 
-      - name: No deploy warnings other than the deliberate HSTS preload opt-out
+      - name: check --deploy is clean at WARNING level
         env:
           DJANGO_DEBUG: 'false'
           DJANGO_ALLOWED_HOSTS: example.com
         run: |
-          set -uo pipefail
+          set -euo pipefail
           export DJANGO_SECRET_KEY="$(python -c 'import secrets;print(secrets.token_urlsafe(64))')"
-          python manage.py check --deploy --fail-level WARNING 2>&1 | tee deploy.log
-          status=${PIPESTATUS[0]}
+          # W021 (HSTS preload) is silenced in settings via
+          # SILENCED_SYSTEM_CHECKS, scoped to that one check, because preload
+          # submission is permanent and is left as an opt-in. Everything else
+          # must be clean, so any new warning fails here.
+          python manage.py check --deploy --fail-level WARNING
+          echo "deploy check clean"
 
-          # W021 is expected: HSTS preload is intentionally left off, because
-          # submitting a domain to the browser preload list is permanent.
-          remaining=$(grep -oE '\(security\.W[0-9]+\)' deploy.log | grep -v 'W021' || true)
-          if [ -n "$remaining" ]; then
-            echo "::error::unexpected deploy warnings: $remaining"
-            exit 1
-          fi
-          echo "only the deliberate W021 preload opt-out remains"
+      - name: Opting into preload removes the silence rather than hiding it
+        env:
+          DJANGO_DEBUG: 'false'
+          DJANGO_ALLOWED_HOSTS: example.com
+          DJANGO_HSTS_PRELOAD: 'true'
+        run: |
+          set -euo pipefail
+          export DJANGO_SECRET_KEY="$(python -c 'import secrets;print(secrets.token_urlsafe(64))')"
+          # Proves the silence is conditional, not a blanket suppression.
+          python manage.py check --deploy --fail-level WARNING
+          python -c "
+          import os, django
+          os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'tourism_analyzer.settings')
+          django.setup()
+          from django.conf import settings
+          assert settings.SECURE_HSTS_PRELOAD is True, 'preload should be on'
+          assert not getattr(settings, 'SILENCED_SYSTEM_CHECKS', []), \
+              'W021 must not stay silenced once preload is enabled'
+          print('silence is conditional, as intended')
+          "
 
       - name: A missing SECRET_KEY must stop the app, not fall back
         env:

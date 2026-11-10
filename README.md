@@ -215,8 +215,15 @@ lockout afterwards.
 | `DJANGO_HSTS_PRELOAD` | **`false`** | Left off on purpose — submitting a domain to the browser preload list is permanent |
 | `DJANGO_SECURE_COOKIES` | `true` | Set `false` only for plain-HTTP local runs |
 
-`check --deploy` is now clean apart from `W021`, which is the preload opt-out
-above. CI asserts exactly that: any *other* security warning fails the build.
+`check --deploy` is now **completely clean**. `W021` — the preload warning — is
+acknowledged via `SILENCED_SYSTEM_CHECKS`, scoped to that single check, and the
+silence is **conditional**: it disappears the moment `DJANGO_HSTS_PRELOAD=true`
+is set. Acknowledging it rather than leaving a standing warning matters, because
+a check that always prints something trains everyone to stop reading it.
+
+CI runs `check --deploy --fail-level WARNING`, so any genuinely new warning
+fails the build, and a second step enables preload to prove the silence is
+conditional rather than a blanket suppression.
 
 ## Tests
 

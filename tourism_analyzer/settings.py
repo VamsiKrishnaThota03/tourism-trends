@@ -145,6 +145,13 @@ if not DEBUG:
     # browser preload list is genuinely permanent, so it should be a choice.
     SECURE_HSTS_PRELOAD = env_bool('DJANGO_HSTS_PRELOAD', False)
 
+    if not SECURE_HSTS_PRELOAD:
+        # Acknowledge the resulting check rather than leaving a standing
+        # warning that trains everyone to ignore `check --deploy` output. This
+        # is scoped to the one check and disappears the moment someone opts in
+        # via DJANGO_HSTS_PRELOAD=true.
+        SILENCED_SYSTEM_CHECKS = ['security.W021']
+
     # Defence in depth alongside Django's own template escaping.
     SECURE_CONTENT_TYPE_NOSNIFF = True
     SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'

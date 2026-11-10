@@ -59,6 +59,26 @@ class ProductionSecuritySettings(unittest.TestCase):
         # permanent, so it must be an explicit choice rather than a default.
         self.assertFalse(self.settings.SECURE_HSTS_PRELOAD)
 
+    def test_the_preload_check_is_silenced_only_while_preload_is_off(self):
+        # Acknowledging W021 keeps `check --deploy` clean, so a genuinely new
+        # warning stands out instead of being lost in standing noise. The
+        # silence must be scoped to that one check and must disappear when
+        # someone opts in — otherwise it is a blanket suppression.
+        self.assertEqual(self.settings.SILENCED_SYSTEM_CHECKS, ['security.W021'])
+
+        env = {
+            'DJANGO_DEBUG': 'false',
+            'DJANGO_SECRET_KEY': 'test-only-key-' + 'x' * 60,
+            'DJANGO_HSTS_PRELOAD': 'true',
+        }
+        with mock.patch.dict(os.environ, env, clear=False):
+            sys.modules.pop('tourism_analyzer.settings', None)
+            opted_in = importlib.import_module('tourism_analyzer.settings')
+            importlib.reload(opted_in)
+            self.assertTrue(opted_in.SECURE_HSTS_PRELOAD)
+            self.assertFalse(getattr(opted_in, 'SILENCED_SYSTEM_CHECKS', []))
+        sys.modules.pop('tourism_analyzer.settings', None)
+
     def test_cookies_are_secure_httponly_and_samesite(self):
         self.assertTrue(self.settings.SESSION_COOKIE_SECURE)
         self.assertTrue(self.settings.CSRF_COOKIE_SECURE)
